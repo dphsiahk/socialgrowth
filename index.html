@@ -363,7 +363,248 @@
       USER MANAGER — Inserted Version (Free/Paid Accounts + Permissions)
       ---------------------------------------------------------------
       EXACT INSERT LOCATION:
-      → Added directly BEFORE the </body> tag (see final section in this file).
+      → Added directly BEFORE the 
+
+  <!-- ==================== BILLING & ADMIN & OAUTH MODULES ==================== -->
+
+  <!-- Billing & Payment UI (off-canvas) -->
+  <div id="billingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:60"> 
+    <div style="max-width:720px;width:95%;background:#071025;padding:18px;border-radius:12px;color:#e6eef6"> 
+      <h3>Billing & Upgrade</h3>
+      <p class="muted">Choose a payment method to upgrade your account. (Demo - server required for production)</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <button class="btn-ghost" id="payOrange">Orange Money Liberia</button>
+        <button class="btn-ghost" id="payLonestar">Lonestar/MTN Mobile Money</button>
+        <button class="btn-ghost" id="payMoMo">Other Mobile Money (MoMo API)</button>
+        <button class="btn-ghost" id="payCard">Pay with VISA / Stripe</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="muted">Amount (USD)</label>
+        <input id="billingAmount" type="number" value="5" style="padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.06);width:120px;color:inherit" />
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <button id="billingCancel" class="btn-ghost">Cancel</button>
+        <button id="billingStart" class="" style="background:#10b981;padding:8px;border-radius:8px;color:white">Start Payment</button>
+      </div>
+
+      <div id="billingStatus" style="margin-top:12px;color:#9aa7bf;font-size:13px"></div>
+    </div>
+  </div>
+
+  <!-- Admin Panel (hidden by default) -->
+  <div id="adminPanel" style="display:none;position:fixed;right:12px;top:80px;width:360px;max-height:70vh;overflow:auto;padding:12px;background:#081428;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.6);z-index:70;color:#e6eef6">
+    <h3>Admin Panel</h3>
+    <div style="margin-top:8px">
+      <div style="margin-bottom:8px"><strong>Manage Users</strong></div>
+      <div id="adminUserList"></div>
+    </div>
+    <div style="margin-top:12px;text-align:right">
+      <button id="adminClose" class="btn-ghost">Close</button>
+    </div>
+  </div>
+
+  <script>
+    /* ======= Integrate billing + admin + oauth with existing user manager ======= */
+
+    // --- Helper: show/hide billing modal ---
+    function showBilling(){ document.getElementById('billingModal').style.display='flex'; }
+    function hideBilling(){ document.getElementById('billingModal').style.display='none'; document.getElementById('billingStatus').textContent=''; }
+
+    document.getElementById('billingCancel').onclick = hideBilling;
+
+    // Attach billing open button in header (create it if missing)
+    (function attachHeaderBilling(){
+      try{
+        const headerRow = document.querySelector('header .row');
+        if(headerRow){
+          const btn = document.createElement('button'); btn.textContent='Billing'; btn.className='btn-ghost'; btn.style.marginLeft='8px';
+          btn.onclick = showBilling; headerRow.appendChild(btn);
+        }
+      }catch(e){ console.warn('billing header attach failed',e) }
+    })();
+
+    // --- Payment simulation / placeholders ---
+    async function simulateMobilePayment(provider, amount){
+      // In production: call your backend endpoint which talks to mobile money provider API
+      // Example server endpoints: /api/pay/orange, /api/pay/lonestar, /api/pay/momo
+      appendLog('Starting '+provider+' payment for $'+amount);
+      document.getElementById('billingStatus').textContent = 'Initiating '+provider+' payment...';
+
+      // Simulate network delay + success (replace with real fetch to server)
+      await new Promise(r=>setTimeout(r,1500));
+      const success = true; // simulate success
+      if(success){
+        document.getElementById('billingStatus').textContent = provider+' payment successful — upgrading account.';
+        // auto-upgrade
+        const up = upgradeToPaid();
+        if(up.success) appendLog('Auto-upgraded user after '+provider+' payment');
+        return { success:true };
+      }else{
+        document.getElementById('billingStatus').textContent = provider+' payment failed.';
+        return { success:false };
+      }
+    }
+
+    async function simulateCardPayment(amount){
+      // In production: redirect to server-created Stripe Checkout session
+      appendLog('Starting card payment for $'+amount);
+      document.getElementById('billingStatus').textContent = 'Redirecting to card payment...';
+      await new Promise(r=>setTimeout(r,1200));
+      // simulate success
+      document.getElementById('billingStatus').textContent = 'Card payment successful — upgrading account.';
+      const up = upgradeToPaid();
+      if(up.success) appendLog('Auto-upgraded user after card payment');
+      return { success:true };
+    }
+
+    // Wire billing buttons
+    document.getElementById('payOrange').onclick = ()=>simulateMobilePayment('Orange Money Liberia', Number(document.getElementById('billingAmount').value||5)).then(()=>{});
+    document.getElementById('payLonestar').onclick = ()=>simulateMobilePayment('Lonestar/MTN MoMo', Number(document.getElementById('billingAmount').value||5)).then(()=>{});
+    document.getElementById('payMoMo').onclick = ()=>simulateMobilePayment('MoMo API', Number(document.getElementById('billingAmount').value||5)).then(()=>{});
+    document.getElementById('payCard').onclick = ()=>simulateCardPayment(Number(document.getElementById('billingAmount').value||5)).then(()=>{});
+
+    // Also wire Start Payment button
+    document.getElementById('billingStart').onclick = ()=>{
+      // default provider selection: if user has local phone preferred or choose card
+      simulateMobilePayment('Orange Money Liberia', Number(document.getElementById('billingAmount').value||5));
+    };
+
+    // ---------------- Admin functions ----------------
+    function ensureRoleExists(userEmail, roleName){
+      const db = loadUsers();
+      if(!db[userEmail]) return false;
+      db[userEmail].role = db[userEmail].role || 'student';
+      if(roleName) db[userEmail].role = roleName;
+      saveUsers(db);
+      return true;
+    }
+
+    function setUserSuspended(email, suspended){
+      const db = loadUsers(); if(!db[email]) return false;
+      db[email].suspended = !!suspended; saveUsers(db); appendLog('Admin set suspended='+suspended+' for '+email); return true;
+    }
+
+    function setUserPlan(email, plan){
+      const db = loadUsers(); if(!db[email]) return false; db[email].plan = plan;
+      // update permissions when plan changes
+      if(plan==='paid'){
+        db[email].permissions.analytics = true; db[email].permissions.apiIntegrations = true;
+      } else {
+        db[email].permissions.analytics = false; db[email].permissions.apiIntegrations = false;
+      }
+      saveUsers(db); appendLog('Admin changed plan '+email+' -> '+plan); return true;
+    }
+
+    // Render admin user list
+    function renderAdminUsers(){
+      const container = document.getElementById('adminUserList'); container.innerHTML='';
+      const db = loadUsers();
+      Object.keys(db).forEach(email=>{
+        const u = db[email];
+        const row = document.createElement('div'); row.style.padding='8px'; row.style.borderBottom='1px solid rgba(255,255,255,0.03)';
+        row.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${email}</strong><div style='font-size:12px;color:#9aa7bf'>role: ${u.role||'student'} • plan: ${u.plan}</div></div></div>`;
+        const controls = document.createElement('div'); controls.style.marginTop='6px';
+        const btnSuspend = document.createElement('button'); btnSuspend.textContent = u.suspended? 'Activate':'Suspend'; btnSuspend.className='btn-ghost'; btnSuspend.onclick = ()=>{ setUserSuspended(email, !u.suspended); renderAdminUsers(); };
+        const btnPromote = document.createElement('button'); btnPromote.textContent='Promote→Admin'; btnPromote.className='btn-ghost'; btnPromote.style.marginLeft='6px'; btnPromote.onclick = ()=>{ ensureRoleExists(email,'admin'); renderAdminUsers(); };
+        const btnMakeInstructor = document.createElement('button'); btnMakeInstructor.textContent='Instructor'; btnMakeInstructor.className='btn-ghost'; btnMakeInstructor.style.marginLeft='6px'; btnMakeInstructor.onclick = ()=>{ ensureRoleExists(email,'instructor'); renderAdminUsers(); };
+        const btnSetPaid = document.createElement('button'); btnSetPaid.textContent='Set Paid'; btnSetPaid.className='btn-ghost'; btnSetPaid.style.marginLeft='6px'; btnSetPaid.onclick = ()=>{ setUserPlan(email,'paid'); renderAdminUsers(); };
+        controls.appendChild(btnSuspend); controls.appendChild(btnPromote); controls.appendChild(btnMakeInstructor); controls.appendChild(btnSetPaid);
+        row.appendChild(controls); container.appendChild(row);
+      });
+    }
+
+    // Open admin panel only for Super Admin or Admin
+    (function attachAdminButton(){
+      try{
+        const headerRow = document.querySelector('header');
+        if(headerRow){
+          const btn = document.createElement('button'); btn.textContent='Admin'; btn.className='btn-ghost'; btn.style.marginLeft='8px';
+          btn.onclick = ()=>{
+            const user = getCurrentUser(); if(!user) return alert('Please login as admin');
+            if(user.role==='superadmin' || user.role==='admin'){
+              document.getElementById('adminPanel').style.display='block'; renderAdminUsers();
+            } else {
+              alert('Admin access required');
+            }
+          };
+          headerRow.appendChild(btn);
+        }
+      }catch(e){console.warn('admin attach failed',e)}
+    })();
+
+    document.getElementById('adminClose').onclick = ()=>{ document.getElementById('adminPanel').style.display='none'; };
+
+    // ---------------- Permission-based menus ----------------
+    function refreshUIByPermission(){
+      const user = getCurrentUser();
+      // example: hide API publish button unless user has apiIntegrations permission
+      const pubBtn = document.getElementById('publishApiBtn'); if(pubBtn){
+        if(!user || !user.permissions || !user.permissions.apiIntegrations) pubBtn.style.display='none'; else pubBtn.style.display='inline-block';
+      }
+      // Billing button visible when logged-in
+      const headerRow = document.querySelector('header .row');
+      if(headerRow){
+        // add account info
+        const existing = document.getElementById('accountInfo'); if(existing) existing.remove();
+        const info = document.createElement('div'); info.id='accountInfo'; info.style.marginLeft='12px';
+        if(user){
+          info.innerHTML = `<div class='small muted'>${user.email} • ${user.plan.toUpperCase()}</div>`;
+        } else {
+          info.innerHTML = `<div class='small muted'>Not logged in</div>`;
+        }
+        headerRow.insertBefore(info, headerRow.firstChild);
+      }
+    }
+
+    // ensure refresh on load and after login/logout
+    (function uiSetupOnLoad(){ refreshUIByPermission(); })();
+
+    // Re-run refresh after user actions
+    const originalLogin = window.loginUser;
+    // override to add UI refresh after login
+    window.loginUser = function(email,password){ const res = originalLogin(email,password); if(res.success){ refreshUIByPermission(); } return res; };
+
+    const originalLogout = window.logoutUser;
+    window.logoutUser = function(){ originalLogout(); refreshUIByPermission(); };
+
+    // ---------------- OAuth client-side helpers (placeholders) ----------------
+    // These functions assume your server implements the full OAuth authorization_code flow and token management.
+
+    function startOAuth(provider){
+      // e.g. provider = 'facebook' | 'google'
+      // Redirect the browser to your backend endpoint that starts the provider auth flow:
+      // GET /auth/{provider}?redirect=/app
+      window.location.href = '/auth/' + provider;
+    }
+
+    // Token refresh: client can ask server to refresh tokens for current user
+    async function refreshOAuthTokens(){
+      try{
+        const resp = await fetch('/api/refresh_tokens', { method:'POST', credentials:'include' });
+        const data = await resp.json();
+        appendLog('Token refresh response: '+JSON.stringify(data));
+        return data;
+      }catch(err){ appendLog('Token refresh failed: '+err.message); return null; }
+    }
+
+    // Example: call server to publish using stored provider tokens
+    async function publishViaProvider(post){
+      try{
+        const resp = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ post }) });
+        const data = await resp.json();
+        appendLog('Publish response: '+JSON.stringify(data));
+        return data;
+      }catch(err){ appendLog('Publish error: '+err.message); return null; }
+    }
+
+    // ---------- Auto-upgrade on simulated payment already uses upgradeToPaid() above ----------
+
+  </script>
+
+</body> tag (see final section in this file).
     */
 
     const USER_DB_KEY = "sgs_users_db";      // Stores all registered users
