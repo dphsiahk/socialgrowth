@@ -1,1 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Social Growth Studio — One Page App</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa7bf;--accent:#1e90ff;--glass:rgba(255,255,255,0.04)}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
+    body{background:linear-gradient(180deg,#041025 0%, #091627 100%);color:#e6eef6;padding:20px}
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    h1{font-size:20px;margin:0}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
+    input[type=text],textarea,select,input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    button{background:var(--accent);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .small{font-size:12px}
+    .post-list{max-height:300px;overflow:auto;margin-top:10px}
+    .post-item{padding:8px;border-radius:8px;background:var(--glass);margin-bottom:8px}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    .row{display:flex;gap:8px;align-items:center}
+    .meta{font-size:12px;color:var(--muted)}
+    .analytics{display:flex;gap:10px;align-items:center}
+    .stat{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:10px;border-radius:10px;text-align:center;width:120px}
+    pre{white-space:pre-wrap;background:rgba(0,0,0,0.3);padding:8px;border-radius:8px}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px 10px}
+    .tag{display:inline-block;padding:4px 6px;margin-right:6px;border-radius:6px;background:rgba(255,255,255,0.03);font-size:12px}
+    .danger{background:#ff6b6b}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Social Growth Studio — One Page App</h1>
+        <div class="muted">Design posts • schedule • analytics estimator • caption + hashtag generator</div>
+      </div>
+      <div class="row">
+        <div class="muted small">Local storage based — no external access</div>
+        <button id="exportBtn">Export JSON</button>
+      </div>
+    </header>
 
+    <div class="grid">
+      <main class="card">
+        <h2 style="margin-top:0">Create / Schedule Post</h2>
+
+        <label>Platform</label>
+        <select id="platform">
+          <option value="facebook">Facebook Page / Group</option>
+          <option value="youtube">YouTube (community/post/video)</option>
+        </select>
+
+        <label>Post Type</label>
+        <select id="postType">
+          <option value="text">Text</option>
+          <option value="image">Image</option>
+          <option value="video">Video</option>
+        </select>
+
+        <label>Title / Headline (for YouTube)</label>
+        <input type="text" id="title" placeholder="Catchy title for YouTube" />
+
+        <label>Caption / Body</label>
+        <textarea id="body" placeholder="Write your caption... (short videos: include hook in first 2 lines)" rows="4"></textarea>
+
+        <label>Media URL (image/video) — or upload preview (not sent anywhere)</label>
+        <input type="text" id="mediaUrl" placeholder="https://..." />
+
+        <label>Schedule (leave empty to post now)</label>
+        <input type="datetime-local" id="scheduleAt" />
+
+        <div style="margin-top:8px" class="row">
+          <button id="generateBtn">Generate Caption + Hashtags</button>
+          <button id="saveBtn">Save / Schedule Post</button>
+          <button id="postNowBtn">Post Now (simulate)</button>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="muted small">Quick tools</div>
+          <div style="margin-top:8px">
+            <button class="btn-ghost" id="suggestTitleBtn">Suggest YouTube Title</button>
+            <button class="btn-ghost" id="ctaBtn">Add CTA Suggestions</button>
+            <button class="btn-ghost" id="ideasBtn">Generate Video Ideas</button>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
+
+        <h3 style="margin:6px 0">Scheduled & Saved Posts</h3>
+        <div class="post-list" id="postList"></div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
+        <h3 style="margin:6px 0">Logs</h3>
+        <pre id="log" style="height:120px;overflow:auto"></pre>
+      </main>
+
+      <aside class="card">
+        <h3 style="margin-top:0">Profile & Analytics Estimator</h3>
+        <label>Facebook Followers / Page likes</label>
+        <input type="number" id="fbFollowers" min="0" placeholder="e.g. 1200" />
+        <label>YouTube Subscribers</label>
+        <input type="number" id="ytSubs" min="0" placeholder="e.g. 3000" />
+
+        <div style="margin-top:10px" class="analytics">
+          <div class="stat">
+            <div class="muted small">Estimated Reach</div>
+            <div id="estReach" style="font-weight:700;font-size:18px">—</div>
+          </div>
+          <div class="stat">
+            <div class="muted small">Engagement</div>
+            <div id="estEng" style="font-weight:700;font-size:18px">—</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label>Growth Tools</label>
+          <div class="small muted">Simulate follower growth per post</div>
+          <label>Avg. organic CTR (0-10%)</label>
+          <input type="number" id="ctr" value="3" min="0" max="100" />
+          <label>Avg. engagement rate (0-20%)</label>
+          <input type="number" id="engRate" value="2" min="0" max="100" />
+          <div style="margin-top:8px" class="row">
+            <button id="calcBtn">Calculate Est.</button>
+            <button id="clearBtn" class="danger">Clear All Data</button>
+          </div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
+
+        <h4>Export / Import</h4>
+        <div class="small muted">Backup or move between devices</div>
+        <div style="margin-top:8px">
+          <button id="exportData">Export Data</button>
+          <input type="file" id="importFile" style="display:block;margin-top:8px" />
+        </div>
+
+        <footer>
+          <div class="muted small">This app simulates posting & stores everything in your browser (localStorage). To actually post to Facebook or YouTube you need to connect platform APIs or use official scheduling tools (Meta Business Suite, YouTube Studio).</div>
+        </footer>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // Simple one-page Social Growth Studio — all local
+    const STATE_KEY = 'sgs_posts_v1';
+
+    // helper: read / write storage
+    function saveState(state){ localStorage.setItem(STATE_KEY, JSON.stringify(state)) }
+    function loadState(){ return JSON.parse(localStorage.getItem(STATE_KEY) || '{"posts":[],"logs":[]}') }
+
+    // initialize
+    const state = loadState();
+
+    // elements
+    const platform = document.getElementById('platform');
+    const postType = document.getElementById('postType');
+    const title = document.getElementById('title');
+    const body = document.getElementById('body');
+    const mediaUrl = document.getElementById('mediaUrl');
+    const scheduleAt = document.getElementById('scheduleAt');
+    const postList = document.getElementById('postList');
+    const logEl = document.getElementById('log');
+    const fbFollowers = document.getElementById('fbFollowers');
+    const ytSubs = document.getElementById('ytSubs');
+    const estReach = document.getElementById('estReach');
+    const estEng = document.getElementById('estEng');
+    const ctr = document.getElementById('ctr');
+    const engRate = document.getElementById('engRate');
+
+    // utilities
+    function nowISO(){ return new Date().toISOString() }
+    function uid(prefix='id'){ return prefix + '_' + Math.random().toString(36).slice(2,10) }
+
+    function appendLog(msg){ state.logs.unshift({t:nowISO(),msg}); saveState(state); renderLogs(); }
+    function renderLogs(){ logEl.textContent = state.logs.slice(0,200).map(l=>`[${l.t}] ${l.msg}`).join('\n') }
+
+    // hashtag generator (basic): picks nouns/words and creates #tags
+    function generateHashtags(text){
+      if(!text) return [];
+      // simple tokenizer: take top words excluding stopwords
+      const stop = new Set(['the','and','for','with','that','this','from','your','you','are','a','to','in','on','of','video','post','watch']);
+      const words = text.toLowerCase().replace(/[\W_]+/g,' ').split(/\s+/).filter(w=>w && !stop.has(w) && w.length>2);
+      const freq = {};
+      words.forEach(w=>freq[w]=(freq[w]||0)+1);
+      const sorted = Object.keys(freq).sort((a,b)=>freq[b]-freq[a]);
+      return sorted.slice(0,8).map(w=>'#'+w.replace(/\s+/g,''));
+    }
+
+    function suggestYouTubeTitle(text){
+      if(!text) return 'Short catchy title that describes the video hook';
+      const first = text.split(/[\.\!\?\n]/)[0];
+      let t = first.trim().split(' ').slice(0,8).join(' ');
+      if(t.length<10) t = (text.split(' ').slice(0,6).join(' '));
+      // add power words
+      const power = ['How to','Why','Top','Secrets of','Quick','Easy','Beginner','Pro'];
+      return power[Math.floor(Math.random()*power.length)] + ' — ' + t;
+    }
+
+    function ctaSuggestions(){
+      return [
+        'Like + Share if this helped you',
+        'Comment your favorite tip below',
+        'Subscribe and hit the bell for more',
+        'Save this post for later',
+        'Send this to a friend who needs it'
+      ];
+    }
+
+    function ideasGenerator(topic){
+      if(!topic) topic = 'your niche topic';
+      const ideas = [];
+      ideas.push('Top 5 mistakes in ' + topic);
+      ideas.push('Quick tutorial: How to ' + topic + ' in 60 sec');
+      ideas.push('Before/After case study: ' + topic);
+      ideas.push('Q&A: Answer common questions about ' + topic);
+      ideas.push('Challenge: 7-day ' + topic + ' challenge');
+      return ideas;
+    }
+
+    // render posts
+    function renderPosts(){
+      postList.innerHTML = '';
+      state.posts.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+      state.posts.forEach(p=>{
+        const div = document.createElement('div'); div.className='post-item';
+        const t = document.createElement('div'); t.innerHTML = `<strong>${p.platform.toUpperCase()}</strong> <span class="muted">• ${p.postType}</span>`;
+        const time = document.createElement('div'); time.className='meta';
+        time.textContent = p.scheduledAt ? 'Scheduled: ' + p.scheduledAt : 'Saved: ' + p.createdAt;
+        const content = document.createElement('div'); content.className='small'; content.textContent = p.title ? (p.title + '\n' + p.body) : p.body;
+        const tags = document.createElement('div'); (p.hashtags||[]).slice(0,8).forEach(h=>{ const s = document.createElement('span'); s.className='tag'; s.textContent = h; tags.appendChild(s) });
+        const actions = document.createElement('div'); actions.style.marginTop='8px';
+        const postNow = document.createElement('button'); postNow.textContent='Post Now'; postNow.onclick = ()=>simulatePost(p.id);
+        const del = document.createElement('button'); del.textContent='Delete'; del.style.marginLeft='8px'; del.onclick = ()=>{ if(confirm('Delete this saved post?')){ state.posts = state.posts.filter(x=>x.id!==p.id); saveState(state); renderPosts(); appendLog('Post deleted'); }}
+        actions.appendChild(postNow); actions.appendChild(del);
+        div.appendChild(t); div.appendChild(time); div.appendChild(content); div.appendChild(tags); div.appendChild(actions);
+        postList.appendChild(div);
+      })
+    }
+
+    // simulate posting: creates a 'published' entry in logs with estimated reach/engagement
+    function simulatePost(postIdOrObj){
+      let p = typeof postIdOrObj === 'string' ? state.posts.find(x=>x.id===postIdOrObj) : postIdOrObj;
+      if(!p) return;
+      const followers = p.platform === 'facebook' ? Number(fbFollowers.value||0) : Number(ytSubs.value||0);
+      const estimatedReach = Math.max( Math.round(followers * (Number(ctr.value||3)/100)), Math.round(Math.random()*50) );
+      const engagement = Math.round(estimatedReach * (Number(engRate.value||2)/100));
+      p.publishedAt = nowISO();
+      p.metrics = {reach:estimatedReach,engagement};
+      saveState(state);
+      appendLog(`${p.platform.toUpperCase()} post published (id=${p.id}) — reach: ${estimatedReach}, engagement: ${engagement}`);
+      // give feedback UI: show in toast (simple)
+      alert(`Posted to ${p.platform.toUpperCase()}\nEstimated reach: ${estimatedReach}\nEstimated engagement: ${engagement}`);
+      renderPosts();
+    }
+
+    // schedule checker: run every 30s to 'publish' scheduled posts whose time passed
+    function processSchedules(){
+      const now = new Date();
+      const due = state.posts.filter(p=>p.scheduledAt && !p.publishedAt && new Date(p.scheduledAt) <= now);
+      due.forEach(p=>simulatePost(p));
+    }
+    setInterval(processSchedules, 30000);
+
+    // UI events
+    document.getElementById('generateBtn').addEventListener('click', ()=>{
+      const tags = generateHashtags(title.value + ' ' + body.value);
+      const suggested = `\n\n${tags.join(' ')}\n`;
+      body.value += suggested;
+      appendLog('Generated hashtags: ' + tags.join(' '));
+      renderPosts();
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', ()=>{
+      const id = uid('post');
+      const p = {
+        id, platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value,
+        scheduledAt: scheduleAt.value ? new Date(scheduleAt.value).toISOString() : null,
+        createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value)
+      };
+      state.posts.push(p); saveState(state); renderPosts(); appendLog('Saved post id='+id);
+      // clear inputs a bit
+      // title.value=''; body.value=''; mediaUrl.value=''; scheduleAt.value='';
+    });
+
+    document.getElementById('postNowBtn').addEventListener('click', ()=>{
+      const id = uid('post');
+      const p = {
+        id, platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value,
+        createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value)
+      };
+      state.posts.push(p); saveState(state); simulatePost(p); renderPosts();
+    });
+
+    document.getElementById('suggestTitleBtn').addEventListener('click', ()=>{
+      title.value = suggestYouTubeTitle(body.value || title.value);
+      appendLog('Suggested YouTube title');
+    });
+
+    document.getElementById('ctaBtn').addEventListener('click', ()=>{
+      const ctas = ctaSuggestions();
+      body.value += '\n\n' + ctas[Math.floor(Math.random()*ctas.length)];
+      appendLog('Inserted CTA');
+    });
+
+    document.getElementById('ideasBtn').addEventListener('click', ()=>{
+      const ideas = ideasGenerator(title.value || body.value || 'your topic');
+      alert('Video ideas:\n\n' + ideas.join('\n'));
+      appendLog('Generated video ideas');
+    });
+
+    document.getElementById('calcBtn').addEventListener('click', ()=>{
+      const f = Number(fbFollowers.value||0); const y = Number(ytSubs.value||0);
+      // simple estimator: reach = followers * ctr%; engagement = reach * engRate%
+      const reachF = Math.round(f * (Number(ctr.value||3)/100));
+      const engF = Math.round(reachF * (Number(engRate.value||2)/100));
+      const reachY = Math.round(y * (Number(ctr.value||3)/100));
+      const engY = Math.round(reachY * (Number(engRate.value||2)/100));
+      estReach.textContent = `FB:${reachF} • YT:${reachY}`;
+      estEng.textContent = `FB:${engF} • YT:${engY}`;
+      appendLog('Calculated estimations');
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      if(confirm('Clear all saved posts and logs?')){ localStorage.removeItem(STATE_KEY); state.posts=[]; state.logs=[]; saveState(state); renderPosts(); renderLogs(); alert('Cleared'); }
+    });
+
+    // export / import
+    document.getElementById('exportData').addEventListener('click', ()=>{
+      const data = localStorage.getItem(STATE_KEY) || '{}';
+      const blob = new Blob([data], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'sgs_backup_'+(new Date().toISOString())+'.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('importFile').addEventListener('change', (ev)=>{
+      const f = ev.target.files[0]; if(!f) return; const reader = new FileReader();
+      reader.onload = e=>{
+        try{ const obj = JSON.parse(e.target.result); localStorage.setItem(STATE_KEY, JSON.stringify(obj)); location.reload(); }catch(err){ alert('Invalid file') }
+      }; reader.readAsText(f);
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{ document.getElementById('exportData').click(); });
+
+    // process scheduled posts on load
+    processSchedules();
+
+    // initial render
+    (function init(){ if(!state.posts) state.posts=[]; if(!state.logs) state.logs=[]; renderPosts(); renderLogs(); })();
+
+    // small accessibility: press ctrl+g to generate hashtags
+    window.addEventListener('keydown', (e)=>{ if(e.ctrlKey && e.key==='g'){ e.preventDefault(); document.getElementById('generateBtn').click(); } });
+
+  </script>
+  <!-- ==================== USER MANAGEMENT MODULE (NEW) ==================== -->
+  <script>
+    /*
+      USER MANAGER — Inserted Version (Free/Paid Accounts + Permissions)
+      ---------------------------------------------------------------
+      EXACT INSERT LOCATION:
+      → Added directly BEFORE the </body> tag (see final section in this file).
+    */
+
+    const USER_DB_KEY = "sgs_users_db";      // Stores all registered users
+    const CURRENT_USER_KEY = "sgs_current_user"; // Tracks logged‑in user
+
+    /* Load DB */
+    function loadUsers() {
+      return JSON.parse(localStorage.getItem(USER_DB_KEY) || "{}");
+    }
+
+    /* Save DB */
+    function saveUsers(db) {
+      localStorage.setItem(USER_DB_KEY, JSON.stringify(db));
+    }
+
+    /* Register user (Free by default) */
+    function registerUser(email, password) {
+      const db = loadUsers();
+      if (db[email]) return { success:false, message:"Account already exists" };
+
+      db[email] = {
+        email,
+        password,
+        plan: "free",          // free | paid
+        permissions: {
+          postScheduler: true,
+          aiTools: true,
+          analytics: false,      // Paid-only
+          apiIntegrations: false // Paid-only
+        },
+        activities: []           // Logs
+      };
+
+      saveUsers(db);
+      return { success:true };
+    }
+
+    /* Login */
+    function loginUser(email, password) {
+      const db = loadUsers();
+      if (!db[email] || db[email].password !== password) {
+        return { success:false, message:"Invalid email or password" };
+      }
+
+      localStorage.setItem(CURRENT_USER_KEY, email);
+      return { success:true, user:db[email] };
+    }
+
+    /* Logout */
+    function logoutUser() {
+      localStorage.removeItem(CURRENT_USER_KEY);
+    }
+
+    /* Get current user */
+    function getCurrentUser() {
+      const email = localStorage.getItem(CURRENT_USER_KEY);
+      if (!email) return null;
+      const db = loadUsers();
+      return db[email] || null;
+    }
+
+    /* Log activity */
+    function logActivity(action, details="") {
+      const user = getCurrentUser();
+      if (!user) return;
+
+      const db = loadUsers();
+      user.activities.push({
+        timestamp: new Date().toISOString(),
+        action,
+        details
+      });
+
+      db[user.email] = user;
+      saveUsers(db);
+    }
+
+    /* Upgrade plan */
+    function upgradeToPaid() {
+      const user = getCurrentUser();
+      if (!user) return { success:false };
+
+      const db = loadUsers();
+
+      user.plan = "paid";
+      user.permissions.analytics = true;
+      user.permissions.apiIntegrations = true;
+
+      db[user.email] = user;
+      saveUsers(db);
+
+      logActivity("Upgrade", "User upgraded to paid plan");
+      return { success:true };
+    }
+
+    /* UI Hooks */
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginUI = document.getElementById("loginUI");
+      const dashboardUI = document.getElementById("dashboardUI");
+      const upgradeBtn = document.getElementById("upgradeBtn");
+
+      const user = getCurrentUser();
+
+      if (user) {
+        loginUI.style.display = "none";
+        dashboardUI.style.display = "block";
+        if (user.plan === "paid") upgradeBtn.style.display = "none";
+      }
+
+      /* Register handler */
+      document.getElementById("registerBtn").onclick = () => {
+        const email = document.getElementById("regEmail").value;
+        const password = document.getElementById("regPassword").value;
+        const result = registerUser(email, password);
+        alert(result.success ? "Account created" : result.message);
+      };
+
+      /* Login handler */
+      document.getElementById("loginBtn").onclick = () => {
+        const email = document.getElementById("logEmail").value;
+        const password = document.getElementById("logPassword").value;
+        const result = loginUser(email, password);
+        if (!result.success) return alert(result.message);
+        location.reload();
+      };
+
+      /* Upgrade handler */
+      upgradeBtn.onclick = () => {
+        if (confirm("Upgrade to PAID plan?")) {
+          const result = upgradeToPaid();
+          if (result.success) alert("Upgraded!");
+          location.reload();
+        }
+      };
+    });
+  </script>
+
+</body>
+</html>
