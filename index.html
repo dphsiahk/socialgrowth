@@ -3,161 +3,186 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Social Growth Studio — One Page App</title>
+  <title>Social Growth Studio — PWA + API Examples</title>
+
+  <!-- Tailwind via CDN for quick styling (replace with build step in production) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f1724">
   <style>
-    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa7bf;--accent:#1e90ff;--glass:rgba(255,255,255,0.04)}
-    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial}
-    body{background:linear-gradient(180deg,#041025 0%, #091627 100%);color:#e6eef6;padding:20px}
-    .container{max-width:1100px;margin:0 auto}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between}
-    h1{font-size:20px;margin:0}
-    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
-    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-    input[type=text],textarea,select,input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
-    button{background:var(--accent);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
-    .muted{color:var(--muted);font-size:13px}
-    .small{font-size:12px}
-    .post-list{max-height:300px;overflow:auto;margin-top:10px}
-    .post-item{padding:8px;border-radius:8px;background:var(--glass);margin-bottom:8px}
-    .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.03);font-size:12px}
-    footer{margin-top:18px;color:var(--muted);font-size:13px}
-    .row{display:flex;gap:8px;align-items:center}
-    .meta{font-size:12px;color:var(--muted)}
-    .analytics{display:flex;gap:10px;align-items:center}
-    .stat{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:10px;border-radius:10px;text-align:center;width:120px}
-    pre{white-space:pre-wrap;background:rgba(0,0,0,0.3);padding:8px;border-radius:8px}
-    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px 10px}
-    .tag{display:inline-block;padding:4px 6px;margin-right:6px;border-radius:6px;background:rgba(255,255,255,0.03);font-size:12px}
-    .danger{background:#ff6b6b}
+    /* minor custom tweaks */
+    body{background:linear-gradient(180deg,#041025 0%, #091627 100%);color:#e6eef6}
+    .glass{background:rgba(255,255,255,0.03);backdrop-filter:blur(4px)}
   </style>
 </head>
-<body>
-  <div class="container">
-    <header>
+<body class="min-h-screen p-6 font-sans">
+  <div class="max-w-6xl mx-auto">
+    <header class="flex items-center justify-between mb-6">
       <div>
-        <h1>Social Growth Studio — One Page App</h1>
-        <div class="muted">Design posts • schedule • analytics estimator • caption + hashtag generator</div>
+        <h1 class="text-2xl font-semibold">Social Growth Studio</h1>
+        <p class="text-sm text-slate-400">Compose, schedule & publish to Facebook + YouTube — PWA-ready with API examples</p>
       </div>
-      <div class="row">
-        <div class="muted small">Local storage based — no external access</div>
-        <button id="exportBtn">Export JSON</button>
+      <div class="flex gap-3 items-center">
+        <button id="installBtn" class="px-3 py-1 bg-sky-600 rounded">Install</button>
+        <button id="exportBtn" class="px-3 py-1 border rounded border-slate-700">Export JSON</button>
       </div>
     </header>
 
-    <div class="grid">
-      <main class="card">
-        <h2 style="margin-top:0">Create / Schedule Post</h2>
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <label>Platform</label>
-        <select id="platform">
-          <option value="facebook">Facebook Page / Group</option>
-          <option value="youtube">YouTube (community/post/video)</option>
-        </select>
-
-        <label>Post Type</label>
-        <select id="postType">
-          <option value="text">Text</option>
-          <option value="image">Image</option>
-          <option value="video">Video</option>
-        </select>
-
-        <label>Title / Headline (for YouTube)</label>
-        <input type="text" id="title" placeholder="Catchy title for YouTube" />
-
-        <label>Caption / Body</label>
-        <textarea id="body" placeholder="Write your caption... (short videos: include hook in first 2 lines)" rows="4"></textarea>
-
-        <label>Media URL (image/video) — or upload preview (not sent anywhere)</label>
-        <input type="text" id="mediaUrl" placeholder="https://..." />
-
-        <label>Schedule (leave empty to post now)</label>
-        <input type="datetime-local" id="scheduleAt" />
-
-        <div style="margin-top:8px" class="row">
-          <button id="generateBtn">Generate Caption + Hashtags</button>
-          <button id="saveBtn">Save / Schedule Post</button>
-          <button id="postNowBtn">Post Now (simulate)</button>
+      <!-- Composer / Editor -->
+      <section class="lg:col-span-2 p-6 rounded-2xl glass">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium">Create / Schedule Post</h2>
+          <div class="text-sm text-slate-400">Local-only by default — enable APIs to publish</div>
         </div>
 
-        <div style="margin-top:12px">
-          <div class="muted small">Quick tools</div>
-          <div style="margin-top:8px">
-            <button class="btn-ghost" id="suggestTitleBtn">Suggest YouTube Title</button>
-            <button class="btn-ghost" id="ctaBtn">Add CTA Suggestions</button>
-            <button class="btn-ghost" id="ideasBtn">Generate Video Ideas</button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300">Platform</label>
+            <select id="platform" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700">
+              <option value="facebook">Facebook Page / Group</option>
+              <option value="youtube">YouTube (Community / Video)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300">Post Type</label>
+            <select id="postType" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700">
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
           </div>
         </div>
 
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
+        <div class="mt-4">
+          <label class="block text-sm text-slate-300">Title / Headline (YouTube)</label>
+          <input id="title" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="Catchy title" />
+        </div>
 
-        <h3 style="margin:6px 0">Scheduled & Saved Posts</h3>
-        <div class="post-list" id="postList"></div>
+        <div class="mt-4">
+          <label class="block text-sm text-slate-300">Caption / Body</label>
+          <textarea id="body" rows="5" class="w-full mt-1 p-3 rounded bg-transparent border border-slate-700" placeholder="Write your caption... (include hook in first 2 lines)"></textarea>
+        </div>
 
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
-        <h3 style="margin:6px 0">Logs</h3>
-        <pre id="log" style="height:120px;overflow:auto"></pre>
-      </main>
-
-      <aside class="card">
-        <h3 style="margin-top:0">Profile & Analytics Estimator</h3>
-        <label>Facebook Followers / Page likes</label>
-        <input type="number" id="fbFollowers" min="0" placeholder="e.g. 1200" />
-        <label>YouTube Subscribers</label>
-        <input type="number" id="ytSubs" min="0" placeholder="e.g. 3000" />
-
-        <div style="margin-top:10px" class="analytics">
-          <div class="stat">
-            <div class="muted small">Estimated Reach</div>
-            <div id="estReach" style="font-weight:700;font-size:18px">—</div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300">Media URL</label>
+            <input id="mediaUrl" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="https://..." />
           </div>
-          <div class="stat">
-            <div class="muted small">Engagement</div>
-            <div id="estEng" style="font-weight:700;font-size:18px">—</div>
+          <div>
+            <label class="block text-sm text-slate-300">Schedule (leave empty to post now)</label>
+            <input id="scheduleAt" type="datetime-local" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" />
           </div>
         </div>
 
-        <div style="margin-top:12px">
-          <label>Growth Tools</label>
-          <div class="small muted">Simulate follower growth per post</div>
-          <label>Avg. organic CTR (0-10%)</label>
-          <input type="number" id="ctr" value="3" min="0" max="100" />
-          <label>Avg. engagement rate (0-20%)</label>
-          <input type="number" id="engRate" value="2" min="0" max="100" />
-          <div style="margin-top:8px" class="row">
-            <button id="calcBtn">Calculate Est.</button>
-            <button id="clearBtn" class="danger">Clear All Data</button>
+        <div class="mt-4 flex gap-3">
+          <button id="generateBtn" class="px-4 py-2 bg-emerald-600 rounded">Generate Caption + Hashtags</button>
+          <button id="saveBtn" class="px-4 py-2 bg-sky-600 rounded">Save / Schedule</button>
+          <button id="postNowBtn" class="px-4 py-2 bg-indigo-600 rounded">Post Now (simulate)</button>
+          <button id="publishApiBtn" class="px-4 py-2 border border-slate-700 rounded">Publish via API</button>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-900 p-4 rounded">
+            <h4 class="text-sm text-slate-300">Quick Tools</h4>
+            <div class="mt-2 flex gap-2">
+              <button id="suggestTitleBtn" class="px-3 py-1 border rounded">Suggest Title</button>
+              <button id="ctaBtn" class="px-3 py-1 border rounded">Add CTA</button>
+              <button id="ideasBtn" class="px-3 py-1 border rounded">Generate Ideas</button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 p-4 rounded">
+            <h4 class="text-sm text-slate-300">Logs</h4>
+            <pre id="log" class="mt-2 text-xs h-36 overflow-auto bg-transparent"></pre>
           </div>
         </div>
 
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.04);margin:12px 0" />
+        <div class="mt-6">
+          <h4 class="text-sm mb-2">Scheduled & Saved Posts</h4>
+          <div id="postList" class="space-y-3"></div>
+        </div>
+      </section>
 
-        <h4>Export / Import</h4>
-        <div class="small muted">Backup or move between devices</div>
-        <div style="margin-top:8px">
-          <button id="exportData">Export Data</button>
-          <input type="file" id="importFile" style="display:block;margin-top:8px" />
+      <!-- Sidebar: Analytics + API Keys + Export -->
+      <aside class="p-6 rounded-2xl glass">
+        <h3 class="text-lg">Analytics & API</h3>
+
+        <div class="mt-3">
+          <label class="block text-sm text-slate-300">Facebook Page ID</label>
+          <input id="fbPageId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="Your Page ID" />
+        </div>
+        <div class="mt-3">
+          <label class="block text-sm text-slate-300">YouTube Channel ID</label>
+          <input id="ytChannelId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="Your Channel ID" />
         </div>
 
-        <footer>
-          <div class="muted small">This app simulates posting & stores everything in your browser (localStorage). To actually post to Facebook or YouTube you need to connect platform APIs or use official scheduling tools (Meta Business Suite, YouTube Studio).</div>
-        </footer>
+        <div class="mt-4">
+          <label class="block text-sm text-slate-300">Followers / Subs</label>
+          <input id="followers" type="number" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="e.g. 1200" />
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button id="calcBtn" class="px-3 py-2 bg-amber-600 rounded">Estimate</button>
+          <button id="clearBtn" class="px-3 py-2 bg-red-600 rounded">Clear All</button>
+        </div>
+
+        <hr class="my-4 border-slate-700" />
+
+        <h4 class="text-sm">API Credentials (Placeholders)</h4>
+        <p class="text-xs text-slate-400">Do not store real secrets in client-side code. Use a secure server to hold client secrets and perform token exchanges.</p>
+        <div class="mt-2">
+          <label class="block text-xs text-slate-300">Facebook Client ID</label>
+          <input id="fbClientId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700 text-sm" placeholder="FACEBOOK_APP_ID" />
+          <label class="block text-xs text-slate-300 mt-2">YouTube Client ID</label>
+          <input id="ytClientId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700 text-sm" placeholder="GOOGLE_CLIENT_ID" />
+        </div>
+
+        <div class="mt-4">
+          <button id="exportData" class="px-3 py-2 border rounded">Export Data</button>
+          <input type="file" id="importFile" class="mt-2" />
+        </div>
+
+        <p class="text-xs text-slate-400 mt-4">This demo includes example client-side calls and placeholders. To publish for real you must register apps and run server-side token exchange (authorization code flow).</p>
       </aside>
-    </div>
+
+    </main>
   </div>
 
+  <!-- Service Worker registration (PWA) -->
   <script>
-    // Simple one-page Social Growth Studio — all local
-    const STATE_KEY = 'sgs_posts_v1';
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').then(()=>console.log('SW registered')).catch(()=>console.log('SW failed'));
+    }
 
-    // helper: read / write storage
-    function saveState(state){ localStorage.setItem(STATE_KEY, JSON.stringify(state)) }
-    function loadState(){ return JSON.parse(localStorage.getItem(STATE_KEY) || '{"posts":[],"logs":[]}') }
+    // Install prompt handling
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e)=>{
+      e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').style.display='inline-block';
+      document.getElementById('installBtn').onclick = async ()=>{ deferredPrompt.prompt(); const choice = await deferredPrompt.userChoice; deferredPrompt = null; };
+    });
+  </script>
 
-    // initialize
-    const state = loadState();
+  <!-- Full application script: local storage + API example hooks (client only placeholders) -->
+  <script>
+    /*
+      IMPORTANT SECURITY NOTES (READ):
+      - Never store client secrets in client-side code. Use a backend to perform OAuth client secret exchanges.
+      - This file contains example flows for educational purposes. To publish to Facebook/YouTube you must:
+        1) Register an app in Facebook for Developers and a project in Google Cloud Console.
+        2) Use the Authorization Code flow: redirect user to provider, receive code on server, exchange code + client_secret for access_token on server.
+        3) Store long-lived tokens securely on server and call platform APIs from server or via server-side proxy.
+    */
 
-    // elements
+    const STATE_KEY='sgs_posts_pwa_v2';
+    const state = JSON.parse(localStorage.getItem(STATE_KEY) || JSON.stringify({posts:[],logs:[]}));
+
+    function saveState(){ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+    function nowISO(){ return new Date().toISOString(); }
+    function uid(prefix='id'){ return prefix+'_'+Math.random().toString(36).slice(2,10); }
+
+    // Elements
     const platform = document.getElementById('platform');
     const postType = document.getElementById('postType');
     const title = document.getElementById('title');
@@ -166,581 +191,135 @@
     const scheduleAt = document.getElementById('scheduleAt');
     const postList = document.getElementById('postList');
     const logEl = document.getElementById('log');
-    const fbFollowers = document.getElementById('fbFollowers');
-    const ytSubs = document.getElementById('ytSubs');
-    const estReach = document.getElementById('estReach');
-    const estEng = document.getElementById('estEng');
-    const ctr = document.getElementById('ctr');
-    const engRate = document.getElementById('engRate');
 
-    // utilities
-    function nowISO(){ return new Date().toISOString() }
-    function uid(prefix='id'){ return prefix + '_' + Math.random().toString(36).slice(2,10) }
+    function appendLog(msg){ state.logs.unshift({t:nowISO(),msg}); saveState(); renderLogs(); }
+    function renderLogs(){ logEl.textContent = state.logs.slice(0,300).map(l=>`[${l.t}] ${l.msg}`).join('\n'); }
 
-    function appendLog(msg){ state.logs.unshift({t:nowISO(),msg}); saveState(state); renderLogs(); }
-    function renderLogs(){ logEl.textContent = state.logs.slice(0,200).map(l=>`[${l.t}] ${l.msg}`).join('\n') }
-
-    // hashtag generator (basic): picks nouns/words and creates #tags
     function generateHashtags(text){
       if(!text) return [];
-      // simple tokenizer: take top words excluding stopwords
       const stop = new Set(['the','and','for','with','that','this','from','your','you','are','a','to','in','on','of','video','post','watch']);
-      const words = text.toLowerCase().replace(/[\W_]+/g,' ').split(/\s+/).filter(w=>w && !stop.has(w) && w.length>2);
-      const freq = {};
-      words.forEach(w=>freq[w]=(freq[w]||0)+1);
-      const sorted = Object.keys(freq).sort((a,b)=>freq[b]-freq[a]);
-      return sorted.slice(0,8).map(w=>'#'+w.replace(/\s+/g,''));
+      const words = text.toLowerCase().replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w && !stop.has(w) && w.length>2);
+      const freq = {}; words.forEach(w=>freq[w]=(freq[w]||0)+1);
+      return Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).slice(0,8).map(w=>'#'+w);
     }
 
-    function suggestYouTubeTitle(text){
-      if(!text) return 'Short catchy title that describes the video hook';
-      const first = text.split(/[\.\!\?\n]/)[0];
-      let t = first.trim().split(' ').slice(0,8).join(' ');
-      if(t.length<10) t = (text.split(' ').slice(0,6).join(' '));
-      // add power words
-      const power = ['How to','Why','Top','Secrets of','Quick','Easy','Beginner','Pro'];
-      return power[Math.floor(Math.random()*power.length)] + ' — ' + t;
-    }
+    function renderPosts(){ postList.innerHTML=''; state.posts.slice().reverse().forEach(p=>{
+      const el = document.createElement('div'); el.className='p-3 bg-slate-900 rounded';
+      el.innerHTML = `<div class="flex justify-between"><div><strong>${p.platform.toUpperCase()}</strong> <span class="text-xs text-slate-400">${p.postType}</span></div><div class="text-xs text-slate-400">${p.scheduledAt||p.createdAt}</div></div><div class="mt-2 text-sm whitespace-pre-wrap">${p.title?('<strong>'+p.title+'</strong>\n') : ''}${p.body||''}</div>`;
+      const actions = document.createElement('div'); actions.className='mt-3 flex gap-2';
+      const postNow = document.createElement('button'); postNow.textContent='Post Now'; postNow.className='px-2 py-1 bg-emerald-600 rounded text-sm'; postNow.onclick=()=>simulatePost(p.id);
+      const publishApi = document.createElement('button'); publishApi.textContent='Publish via API'; publishApi.className='px-2 py-1 border rounded text-sm'; publishApi.onclick=()=>publishViaApi(p.id);
+      const del = document.createElement('button'); del.textContent='Delete'; del.className='px-2 py-1 bg-red-600 rounded text-sm'; del.onclick=()=>{ if(confirm('Delete post?')){ state.posts=state.posts.filter(x=>x.id!==p.id); saveState(); renderPosts(); } };
+      actions.appendChild(postNow); actions.appendChild(publishApi); actions.appendChild(del); el.appendChild(actions); postList.appendChild(el);
+    }); }
 
-    function ctaSuggestions(){
-      return [
-        'Like + Share if this helped you',
-        'Comment your favorite tip below',
-        'Subscribe and hit the bell for more',
-        'Save this post for later',
-        'Send this to a friend who needs it'
-      ];
-    }
-
-    function ideasGenerator(topic){
-      if(!topic) topic = 'your niche topic';
-      const ideas = [];
-      ideas.push('Top 5 mistakes in ' + topic);
-      ideas.push('Quick tutorial: How to ' + topic + ' in 60 sec');
-      ideas.push('Before/After case study: ' + topic);
-      ideas.push('Q&A: Answer common questions about ' + topic);
-      ideas.push('Challenge: 7-day ' + topic + ' challenge');
-      return ideas;
-    }
-
-    // render posts
-    function renderPosts(){
-      postList.innerHTML = '';
-      state.posts.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
-      state.posts.forEach(p=>{
-        const div = document.createElement('div'); div.className='post-item';
-        const t = document.createElement('div'); t.innerHTML = `<strong>${p.platform.toUpperCase()}</strong> <span class="muted">• ${p.postType}</span>`;
-        const time = document.createElement('div'); time.className='meta';
-        time.textContent = p.scheduledAt ? 'Scheduled: ' + p.scheduledAt : 'Saved: ' + p.createdAt;
-        const content = document.createElement('div'); content.className='small'; content.textContent = p.title ? (p.title + '\n' + p.body) : p.body;
-        const tags = document.createElement('div'); (p.hashtags||[]).slice(0,8).forEach(h=>{ const s = document.createElement('span'); s.className='tag'; s.textContent = h; tags.appendChild(s) });
-        const actions = document.createElement('div'); actions.style.marginTop='8px';
-        const postNow = document.createElement('button'); postNow.textContent='Post Now'; postNow.onclick = ()=>simulatePost(p.id);
-        const del = document.createElement('button'); del.textContent='Delete'; del.style.marginLeft='8px'; del.onclick = ()=>{ if(confirm('Delete this saved post?')){ state.posts = state.posts.filter(x=>x.id!==p.id); saveState(state); renderPosts(); appendLog('Post deleted'); }}
-        actions.appendChild(postNow); actions.appendChild(del);
-        div.appendChild(t); div.appendChild(time); div.appendChild(content); div.appendChild(tags); div.appendChild(actions);
-        postList.appendChild(div);
-      })
-    }
-
-    // simulate posting: creates a 'published' entry in logs with estimated reach/engagement
-    function simulatePost(postIdOrObj){
-      let p = typeof postIdOrObj === 'string' ? state.posts.find(x=>x.id===postIdOrObj) : postIdOrObj;
-      if(!p) return;
-      const followers = p.platform === 'facebook' ? Number(fbFollowers.value||0) : Number(ytSubs.value||0);
-      const estimatedReach = Math.max( Math.round(followers * (Number(ctr.value||3)/100)), Math.round(Math.random()*50) );
-      const engagement = Math.round(estimatedReach * (Number(engRate.value||2)/100));
-      p.publishedAt = nowISO();
-      p.metrics = {reach:estimatedReach,engagement};
-      saveState(state);
-      appendLog(`${p.platform.toUpperCase()} post published (id=${p.id}) — reach: ${estimatedReach}, engagement: ${engagement}`);
-      // give feedback UI: show in toast (simple)
-      alert(`Posted to ${p.platform.toUpperCase()}\nEstimated reach: ${estimatedReach}\nEstimated engagement: ${engagement}`);
-      renderPosts();
-    }
-
-    // schedule checker: run every 30s to 'publish' scheduled posts whose time passed
-    function processSchedules(){
-      const now = new Date();
-      const due = state.posts.filter(p=>p.scheduledAt && !p.publishedAt && new Date(p.scheduledAt) <= now);
-      due.forEach(p=>simulatePost(p));
-    }
-    setInterval(processSchedules, 30000);
-
-    // UI events
+    // Create / Save / Simulate
     document.getElementById('generateBtn').addEventListener('click', ()=>{
       const tags = generateHashtags(title.value + ' ' + body.value);
-      const suggested = `\n\n${tags.join(' ')}\n`;
-      body.value += suggested;
+      body.value += '\n\n' + tags.join(' ');
       appendLog('Generated hashtags: ' + tags.join(' '));
-      renderPosts();
     });
 
     document.getElementById('saveBtn').addEventListener('click', ()=>{
-      const id = uid('post');
-      const p = {
-        id, platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value,
-        scheduledAt: scheduleAt.value ? new Date(scheduleAt.value).toISOString() : null,
-        createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value)
-      };
-      state.posts.push(p); saveState(state); renderPosts(); appendLog('Saved post id='+id);
-      // clear inputs a bit
-      // title.value=''; body.value=''; mediaUrl.value=''; scheduleAt.value='';
+      const p = { id:uid('post'), platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value, scheduledAt:scheduleAt.value? new Date(scheduleAt.value).toISOString():null, createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value) };
+      state.posts.push(p); saveState(); renderPosts(); appendLog('Saved post '+p.id);
     });
 
     document.getElementById('postNowBtn').addEventListener('click', ()=>{
-      const id = uid('post');
-      const p = {
-        id, platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value,
-        createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value)
-      };
-      state.posts.push(p); saveState(state); simulatePost(p); renderPosts();
+      const p = { id:uid('post'), platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value, createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value) };
+      state.posts.push(p); saveState(); simulatePost(p.id);
     });
 
-    document.getElementById('suggestTitleBtn').addEventListener('click', ()=>{
-      title.value = suggestYouTubeTitle(body.value || title.value);
-      appendLog('Suggested YouTube title');
-    });
+    // Simulate publishing (only local)
+    function simulatePost(postId){ const p = state.posts.find(x=>x.id===postId); if(!p) return; p.publishedAt = nowISO(); p.metrics = { reach: Math.floor(Math.random()*200)+20, engagement: Math.floor(Math.random()*50) }; saveState(); appendLog(`Simulated publish ${p.platform} id=${p.id} reach=${p.metrics.reach}`); alert('Simulated publish — check logs'); renderPosts(); }
 
-    document.getElementById('ctaBtn').addEventListener('click', ()=>{
-      const ctas = ctaSuggestions();
-      body.value += '\n\n' + ctas[Math.floor(Math.random()*ctas.length)];
-      appendLog('Inserted CTA');
-    });
+    // ---------- API Example Hooks (placeholders and comments) ----------
+    // NOTE: The following examples are intentionally client-side placeholders that show the shape of requests.
+    // For real publishing you MUST implement server-side OAuth flows and keep client_secret on the server.
 
-    document.getElementById('ideasBtn').addEventListener('click', ()=>{
-      const ideas = ideasGenerator(title.value || body.value || 'your topic');
-      alert('Video ideas:\n\n' + ideas.join('\n'));
-      appendLog('Generated video ideas');
-    });
+    // Example: publish a message to a Facebook Page using a PAGE_ACCESS_TOKEN (server should provide this token)
+    async function publishFacebookPage(pageAccessToken, pageId, message, mediaUrl){
+      // POST /{page-id}/feed?message={message}&access_token={page_access_token}
+      const url = `https://graph.facebook.com/${encodeURIComponent(pageId)}/feed`;
+      const body = new URLSearchParams({ message });
+      // If attaching media, the flow is different: upload photo/video first, then create post with attached_media
+      const res = await fetch(url+'?access_token='+encodeURIComponent(pageAccessToken), { method:'POST', body });
+      return res.json();
+    }
 
-    document.getElementById('calcBtn').addEventListener('click', ()=>{
-      const f = Number(fbFollowers.value||0); const y = Number(ytSubs.value||0);
-      // simple estimator: reach = followers * ctr%; engagement = reach * engRate%
-      const reachF = Math.round(f * (Number(ctr.value||3)/100));
-      const engF = Math.round(reachF * (Number(engRate.value||2)/100));
-      const reachY = Math.round(y * (Number(ctr.value||3)/100));
-      const engY = Math.round(reachY * (Number(engRate.value||2)/100));
-      estReach.textContent = `FB:${reachF} • YT:${reachY}`;
-      estEng.textContent = `FB:${engF} • YT:${engY}`;
-      appendLog('Calculated estimations');
-    });
+    // Example: upload a video to YouTube (requires OAuth access token with proper scopes)
+    // Real uploads should be done server-side or use resumable upload endpoints with server assistance.
+    async function uploadYouTubeVideo(accessToken, title, description, privacy='public'){
+      // Using simple (single-request) upload for small files - normally you use resumable upload
+      const url = 'https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status';
+      const payload = { snippet:{ title, description }, status:{ privacyStatus: privacy } };
+      const res = await fetch(url, { method:'POST', headers: { 'Authorization': 'Bearer '+accessToken }, body: JSON.stringify(payload) });
+      return res.json();
+    }
 
-    document.getElementById('clearBtn').addEventListener('click', ()=>{
-      if(confirm('Clear all saved posts and logs?')){ localStorage.removeItem(STATE_KEY); state.posts=[]; state.logs=[]; saveState(state); renderPosts(); renderLogs(); alert('Cleared'); }
-    });
+    // The publishViaApi function illustrates how the UI would request a server to publish.
+    async function publishViaApi(postId){
+      const p = state.posts.find(x=>x.id===postId); if(!p) return alert('Post not found');
 
-    // export / import
-    document.getElementById('exportData').addEventListener('click', ()=>{
-      const data = localStorage.getItem(STATE_KEY) || '{}';
-      const blob = new Blob([data], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'sgs_backup_'+(new Date().toISOString())+'.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    });
+      // Example: client asks your server to perform the publishing (server has tokens)
+      // POST /api/publish
+      // body: { platform: 'facebook'|'youtube', post: p }
+      // Server will: (a) lookup stored tokens for authenticated user, (b) call Facebook Graph or YouTube Data API, (c) return status
 
-    document.getElementById('importFile').addEventListener('change', (ev)=>{
-      const f = ev.target.files[0]; if(!f) return; const reader = new FileReader();
-      reader.onload = e=>{
-        try{ const obj = JSON.parse(e.target.result); localStorage.setItem(STATE_KEY, JSON.stringify(obj)); location.reload(); }catch(err){ alert('Invalid file') }
-      }; reader.readAsText(f);
-    });
+      try{
+        appendLog('Requesting server to publish post id='+p.id);
+        // Example fetch (this endpoint must be implemented on your server)
+        const resp = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ post: p }) });
+        const data = await resp.json();
+        if(resp.ok){ appendLog('Server publish success: '+JSON.stringify(data)); alert('Published via server (check logs)'); }
+        else { appendLog('Server publish failed: '+JSON.stringify(data)); alert('Publish failed — see logs'); }
+      }catch(err){ appendLog('Publish error: '+err.message); alert('Publish request error'); }
+    }
 
-    document.getElementById('exportBtn').addEventListener('click', ()=>{ document.getElementById('exportData').click(); });
-
-    // process scheduled posts on load
-    processSchedules();
-
-    // initial render
-    (function init(){ if(!state.posts) state.posts=[]; if(!state.logs) state.logs=[]; renderPosts(); renderLogs(); })();
-
-    // small accessibility: press ctrl+g to generate hashtags
-    window.addEventListener('keydown', (e)=>{ if(e.ctrlKey && e.key==='g'){ e.preventDefault(); document.getElementById('generateBtn').click(); } });
-
-  </script>
-  <!-- ==================== USER MANAGEMENT MODULE (NEW) ==================== -->
-  <script>
     /*
-      USER MANAGER — Inserted Version (Free/Paid Accounts + Permissions)
-      ---------------------------------------------------------------
-      EXACT INSERT LOCATION:
-      → Added directly BEFORE the 
+      OAuth flows (high-level recommended architecture):
+      1) Client initiates login by opening server route: GET /auth/facebook or /auth/google
+      2) Server redirects user to provider authorization URL (includes client_id, redirect_uri, scopes)
+      3) User authenticates and provider redirects back to server redirect_uri with a code
+      4) Server exchanges code + client_secret for access_token (and refresh_token) using provider token endpoint
+      5) Server stores token(s) securely and associates them with the user session
+      6) When user requests publish, client calls server API (/api/publish) and server uses stored tokens to call platform APIs
 
-  <!-- ==================== BILLING & ADMIN & OAUTH MODULES ==================== -->
-
-  <!-- Billing & Payment UI (off-canvas) -->
-  <div id="billingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;z-index:60"> 
-    <div style="max-width:720px;width:95%;background:#071025;padding:18px;border-radius:12px;color:#e6eef6"> 
-      <h3>Billing & Upgrade</h3>
-      <p class="muted">Choose a payment method to upgrade your account. (Demo - server required for production)</p>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-        <button class="btn-ghost" id="payOrange">Orange Money Liberia</button>
-        <button class="btn-ghost" id="payLonestar">Lonestar/MTN Mobile Money</button>
-        <button class="btn-ghost" id="payMoMo">Other Mobile Money (MoMo API)</button>
-        <button class="btn-ghost" id="payCard">Pay with VISA / Stripe</button>
-      </div>
-
-      <div style="margin-top:12px">
-        <label class="muted">Amount (USD)</label>
-        <input id="billingAmount" type="number" value="5" style="padding:8px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.06);width:120px;color:inherit" />
-      </div>
-
-      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-        <button id="billingCancel" class="btn-ghost">Cancel</button>
-        <button id="billingStart" class="" style="background:#10b981;padding:8px;border-radius:8px;color:white">Start Payment</button>
-      </div>
-
-      <div id="billingStatus" style="margin-top:12px;color:#9aa7bf;font-size:13px"></div>
-    </div>
-  </div>
-
-  <!-- Admin Panel (hidden by default) -->
-  <div id="adminPanel" style="display:none;position:fixed;right:12px;top:80px;width:360px;max-height:70vh;overflow:auto;padding:12px;background:#081428;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.6);z-index:70;color:#e6eef6">
-    <h3>Admin Panel</h3>
-    <div style="margin-top:8px">
-      <div style="margin-bottom:8px"><strong>Manage Users</strong></div>
-      <div id="adminUserList"></div>
-    </div>
-    <div style="margin-top:12px;text-align:right">
-      <button id="adminClose" class="btn-ghost">Close</button>
-    </div>
-  </div>
-
-  <script>
-    /* ======= Integrate billing + admin + oauth with existing user manager ======= */
-
-    // --- Helper: show/hide billing modal ---
-    function showBilling(){ document.getElementById('billingModal').style.display='flex'; }
-    function hideBilling(){ document.getElementById('billingModal').style.display='none'; document.getElementById('billingStatus').textContent=''; }
-
-    document.getElementById('billingCancel').onclick = hideBilling;
-
-    // Attach billing open button in header (create it if missing)
-    (function attachHeaderBilling(){
-      try{
-        const headerRow = document.querySelector('header .row');
-        if(headerRow){
-          const btn = document.createElement('button'); btn.textContent='Billing'; btn.className='btn-ghost'; btn.style.marginLeft='8px';
-          btn.onclick = showBilling; headerRow.appendChild(btn);
-        }
-      }catch(e){ console.warn('billing header attach failed',e) }
-    })();
-
-    // --- Payment simulation / placeholders ---
-    async function simulateMobilePayment(provider, amount){
-      // In production: call your backend endpoint which talks to mobile money provider API
-      // Example server endpoints: /api/pay/orange, /api/pay/lonestar, /api/pay/momo
-      appendLog('Starting '+provider+' payment for $'+amount);
-      document.getElementById('billingStatus').textContent = 'Initiating '+provider+' payment...';
-
-      // Simulate network delay + success (replace with real fetch to server)
-      await new Promise(r=>setTimeout(r,1500));
-      const success = true; // simulate success
-      if(success){
-        document.getElementById('billingStatus').textContent = provider+' payment successful — upgrading account.';
-        // auto-upgrade
-        const up = upgradeToPaid();
-        if(up.success) appendLog('Auto-upgraded user after '+provider+' payment');
-        return { success:true };
-      }else{
-        document.getElementById('billingStatus').textContent = provider+' payment failed.';
-        return { success:false };
-      }
-    }
-
-    async function simulateCardPayment(amount){
-      // In production: redirect to server-created Stripe Checkout session
-      appendLog('Starting card payment for $'+amount);
-      document.getElementById('billingStatus').textContent = 'Redirecting to card payment...';
-      await new Promise(r=>setTimeout(r,1200));
-      // simulate success
-      document.getElementById('billingStatus').textContent = 'Card payment successful — upgrading account.';
-      const up = upgradeToPaid();
-      if(up.success) appendLog('Auto-upgraded user after card payment');
-      return { success:true };
-    }
-
-    // Wire billing buttons
-    document.getElementById('payOrange').onclick = ()=>simulateMobilePayment('Orange Money Liberia', Number(document.getElementById('billingAmount').value||5)).then(()=>{});
-    document.getElementById('payLonestar').onclick = ()=>simulateMobilePayment('Lonestar/MTN MoMo', Number(document.getElementById('billingAmount').value||5)).then(()=>{});
-    document.getElementById('payMoMo').onclick = ()=>simulateMobilePayment('MoMo API', Number(document.getElementById('billingAmount').value||5)).then(()=>{});
-    document.getElementById('payCard').onclick = ()=>simulateCardPayment(Number(document.getElementById('billingAmount').value||5)).then(()=>{});
-
-    // Also wire Start Payment button
-    document.getElementById('billingStart').onclick = ()=>{
-      // default provider selection: if user has local phone preferred or choose card
-      simulateMobilePayment('Orange Money Liberia', Number(document.getElementById('billingAmount').value||5));
-    };
-
-    // ---------------- Admin functions ----------------
-    function ensureRoleExists(userEmail, roleName){
-      const db = loadUsers();
-      if(!db[userEmail]) return false;
-      db[userEmail].role = db[userEmail].role || 'student';
-      if(roleName) db[userEmail].role = roleName;
-      saveUsers(db);
-      return true;
-    }
-
-    function setUserSuspended(email, suspended){
-      const db = loadUsers(); if(!db[email]) return false;
-      db[email].suspended = !!suspended; saveUsers(db); appendLog('Admin set suspended='+suspended+' for '+email); return true;
-    }
-
-    function setUserPlan(email, plan){
-      const db = loadUsers(); if(!db[email]) return false; db[email].plan = plan;
-      // update permissions when plan changes
-      if(plan==='paid'){
-        db[email].permissions.analytics = true; db[email].permissions.apiIntegrations = true;
-      } else {
-        db[email].permissions.analytics = false; db[email].permissions.apiIntegrations = false;
-      }
-      saveUsers(db); appendLog('Admin changed plan '+email+' -> '+plan); return true;
-    }
-
-    // Render admin user list
-    function renderAdminUsers(){
-      const container = document.getElementById('adminUserList'); container.innerHTML='';
-      const db = loadUsers();
-      Object.keys(db).forEach(email=>{
-        const u = db[email];
-        const row = document.createElement('div'); row.style.padding='8px'; row.style.borderBottom='1px solid rgba(255,255,255,0.03)';
-        row.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${email}</strong><div style='font-size:12px;color:#9aa7bf'>role: ${u.role||'student'} • plan: ${u.plan}</div></div></div>`;
-        const controls = document.createElement('div'); controls.style.marginTop='6px';
-        const btnSuspend = document.createElement('button'); btnSuspend.textContent = u.suspended? 'Activate':'Suspend'; btnSuspend.className='btn-ghost'; btnSuspend.onclick = ()=>{ setUserSuspended(email, !u.suspended); renderAdminUsers(); };
-        const btnPromote = document.createElement('button'); btnPromote.textContent='Promote→Admin'; btnPromote.className='btn-ghost'; btnPromote.style.marginLeft='6px'; btnPromote.onclick = ()=>{ ensureRoleExists(email,'admin'); renderAdminUsers(); };
-        const btnMakeInstructor = document.createElement('button'); btnMakeInstructor.textContent='Instructor'; btnMakeInstructor.className='btn-ghost'; btnMakeInstructor.style.marginLeft='6px'; btnMakeInstructor.onclick = ()=>{ ensureRoleExists(email,'instructor'); renderAdminUsers(); };
-        const btnSetPaid = document.createElement('button'); btnSetPaid.textContent='Set Paid'; btnSetPaid.className='btn-ghost'; btnSetPaid.style.marginLeft='6px'; btnSetPaid.onclick = ()=>{ setUserPlan(email,'paid'); renderAdminUsers(); };
-        controls.appendChild(btnSuspend); controls.appendChild(btnPromote); controls.appendChild(btnMakeInstructor); controls.appendChild(btnSetPaid);
-        row.appendChild(controls); container.appendChild(row);
-      });
-    }
-
-    // Open admin panel only for Super Admin or Admin
-    (function attachAdminButton(){
-      try{
-        const headerRow = document.querySelector('header');
-        if(headerRow){
-          const btn = document.createElement('button'); btn.textContent='Admin'; btn.className='btn-ghost'; btn.style.marginLeft='8px';
-          btn.onclick = ()=>{
-            const user = getCurrentUser(); if(!user) return alert('Please login as admin');
-            if(user.role==='superadmin' || user.role==='admin'){
-              document.getElementById('adminPanel').style.display='block'; renderAdminUsers();
-            } else {
-              alert('Admin access required');
-            }
-          };
-          headerRow.appendChild(btn);
-        }
-      }catch(e){console.warn('admin attach failed',e)}
-    })();
-
-    document.getElementById('adminClose').onclick = ()=>{ document.getElementById('adminPanel').style.display='none'; };
-
-    // ---------------- Permission-based menus ----------------
-    function refreshUIByPermission(){
-      const user = getCurrentUser();
-      // example: hide API publish button unless user has apiIntegrations permission
-      const pubBtn = document.getElementById('publishApiBtn'); if(pubBtn){
-        if(!user || !user.permissions || !user.permissions.apiIntegrations) pubBtn.style.display='none'; else pubBtn.style.display='inline-block';
-      }
-      // Billing button visible when logged-in
-      const headerRow = document.querySelector('header .row');
-      if(headerRow){
-        // add account info
-        const existing = document.getElementById('accountInfo'); if(existing) existing.remove();
-        const info = document.createElement('div'); info.id='accountInfo'; info.style.marginLeft='12px';
-        if(user){
-          info.innerHTML = `<div class='small muted'>${user.email} • ${user.plan.toUpperCase()}</div>`;
-        } else {
-          info.innerHTML = `<div class='small muted'>Not logged in</div>`;
-        }
-        headerRow.insertBefore(info, headerRow.firstChild);
-      }
-    }
-
-    // ensure refresh on load and after login/logout
-    (function uiSetupOnLoad(){ refreshUIByPermission(); })();
-
-    // Re-run refresh after user actions
-    const originalLogin = window.loginUser;
-    // override to add UI refresh after login
-    window.loginUser = function(email,password){ const res = originalLogin(email,password); if(res.success){ refreshUIByPermission(); } return res; };
-
-    const originalLogout = window.logoutUser;
-    window.logoutUser = function(){ originalLogout(); refreshUIByPermission(); };
-
-    // ---------------- OAuth client-side helpers (placeholders) ----------------
-    // These functions assume your server implements the full OAuth authorization_code flow and token management.
-
-    function startOAuth(provider){
-      // e.g. provider = 'facebook' | 'google'
-      // Redirect the browser to your backend endpoint that starts the provider auth flow:
-      // GET /auth/{provider}?redirect=/app
-      window.location.href = '/auth/' + provider;
-    }
-
-    // Token refresh: client can ask server to refresh tokens for current user
-    async function refreshOAuthTokens(){
-      try{
-        const resp = await fetch('/api/refresh_tokens', { method:'POST', credentials:'include' });
-        const data = await resp.json();
-        appendLog('Token refresh response: '+JSON.stringify(data));
-        return data;
-      }catch(err){ appendLog('Token refresh failed: '+err.message); return null; }
-    }
-
-    // Example: call server to publish using stored provider tokens
-    async function publishViaProvider(post){
-      try{
-        const resp = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ post }) });
-        const data = await resp.json();
-        appendLog('Publish response: '+JSON.stringify(data));
-        return data;
-      }catch(err){ appendLog('Publish error: '+err.message); return null; }
-    }
-
-    // ---------- Auto-upgrade on simulated payment already uses upgradeToPaid() above ----------
-
-  </script>
-
-</body> tag (see final section in this file).
+      See provider docs for details and required scopes (Facebook: publish_pages, pages_manage_posts, manage_pages; Google: youtube.upload, youtube.force-ssl, etc.)
     */
 
-    const USER_DB_KEY = "sgs_users_db";      // Stores all registered users
-    const CURRENT_USER_KEY = "sgs_current_user"; // Tracks logged‑in user
-
-    /* Load DB */
-    function loadUsers() {
-      return JSON.parse(localStorage.getItem(USER_DB_KEY) || "{}");
+    // Example client-side helper to open OAuth login (server must implement /auth/facebook and /auth/google)
+    function startOAuth(provider){
+      // This will open your backend route which starts the provider redirect
+      window.open('/auth/' + provider, '_self');
     }
 
-    /* Save DB */
-    function saveUsers(db) {
-      localStorage.setItem(USER_DB_KEY, JSON.stringify(db));
-    }
-
-    /* Register user (Free by default) */
-    function registerUser(email, password) {
-      const db = loadUsers();
-      if (db[email]) return { success:false, message:"Account already exists" };
-
-      db[email] = {
-        email,
-        password,
-        plan: "free",          // free | paid
-        permissions: {
-          postScheduler: true,
-          aiTools: true,
-          analytics: false,      // Paid-only
-          apiIntegrations: false // Paid-only
-        },
-        activities: []           // Logs
-      };
-
-      saveUsers(db);
-      return { success:true };
-    }
-
-    /* Login */
-    function loginUser(email, password) {
-      const db = loadUsers();
-      if (!db[email] || db[email].password !== password) {
-        return { success:false, message:"Invalid email or password" };
-      }
-
-      localStorage.setItem(CURRENT_USER_KEY, email);
-      return { success:true, user:db[email] };
-    }
-
-    /* Logout */
-    function logoutUser() {
-      localStorage.removeItem(CURRENT_USER_KEY);
-    }
-
-    /* Get current user */
-    function getCurrentUser() {
-      const email = localStorage.getItem(CURRENT_USER_KEY);
-      if (!email) return null;
-      const db = loadUsers();
-      return db[email] || null;
-    }
-
-    /* Log activity */
-    function logActivity(action, details="") {
-      const user = getCurrentUser();
-      if (!user) return;
-
-      const db = loadUsers();
-      user.activities.push({
-        timestamp: new Date().toISOString(),
-        action,
-        details
-      });
-
-      db[user.email] = user;
-      saveUsers(db);
-    }
-
-    /* Upgrade plan */
-    function upgradeToPaid() {
-      const user = getCurrentUser();
-      if (!user) return { success:false };
-
-      const db = loadUsers();
-
-      user.plan = "paid";
-      user.permissions.analytics = true;
-      user.permissions.apiIntegrations = true;
-
-      db[user.email] = user;
-      saveUsers(db);
-
-      logActivity("Upgrade", "User upgraded to paid plan");
-      return { success:true };
-    }
-
-    /* UI Hooks */
-    document.addEventListener("DOMContentLoaded", () => {
-      const loginUI = document.getElementById("loginUI");
-      const dashboardUI = document.getElementById("dashboardUI");
-      const upgradeBtn = document.getElementById("upgradeBtn");
-
-      const user = getCurrentUser();
-
-      if (user) {
-        loginUI.style.display = "none";
-        dashboardUI.style.display = "block";
-        if (user.plan === "paid") upgradeBtn.style.display = "none";
-      }
-
-      /* Register handler */
-      document.getElementById("registerBtn").onclick = () => {
-        const email = document.getElementById("regEmail").value;
-        const password = document.getElementById("regPassword").value;
-        const result = registerUser(email, password);
-        alert(result.success ? "Account created" : result.message);
-      };
-
-      /* Login handler */
-      document.getElementById("loginBtn").onclick = () => {
-        const email = document.getElementById("logEmail").value;
-        const password = document.getElementById("logPassword").value;
-        const result = loginUser(email, password);
-        if (!result.success) return alert(result.message);
-        location.reload();
-      };
-
-      /* Upgrade handler */
-      upgradeBtn.onclick = () => {
-        if (confirm("Upgrade to PAID plan?")) {
-          const result = upgradeToPaid();
-          if (result.success) alert("Upgraded!");
-          location.reload();
-        }
-      };
+    document.getElementById('publishApiBtn').addEventListener('click', ()=>{
+      const id = state.posts.length ? state.posts[state.posts.length-1].id : null; if(!id) return alert('No posts available'); publishViaApi(id);
     });
-  </script>
 
+    // small helpers: title suggestions, cta, ideas
+    function suggestYouTubeTitle(text){ if(!text) return 'Quick tip — improve your setup'; const first = text.split(/[\.\!\?\n]/)[0]; return 'How to — ' + first.split(' ').slice(0,8).join(' '); }
+    document.getElementById('suggestTitleBtn').addEventListener('click', ()=>{ title.value = suggestYouTubeTitle(body.value||title.value); appendLog('Suggested title'); });
+    document.getElementById('ctaBtn').addEventListener('click', ()=>{ const ctas=['Like & Share','Comment below','Subscribe for more','Save for later']; body.value += '\n\n' + ctas[Math.floor(Math.random()*ctas.length)]; appendLog('Inserted CTA'); });
+    document.getElementById('ideasBtn').addEventListener('click', ()=>{ alert(['Top 5 tips','Quick tutorial 60s','Before & After','Q&A session','7-day challenge'].join('\n')); appendLog('Generated ideas'); });
+
+    // Export / import
+    document.getElementById('exportData').addEventListener('click', ()=>{ const data = JSON.stringify(state); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url;a.download='sgs_backup_'+new Date().toISOString()+'.json'; a.click(); URL.revokeObjectURL(url); });
+    document.getElementById('importFile').addEventListener('change', (ev)=>{ const f=ev.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const obj=JSON.parse(e.target.result); localStorage.setItem(STATE_KEY, JSON.stringify(obj)); location.reload(); }catch(err){ alert('Invalid file'); } }; r.readAsText(f); });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ if(confirm('Clear all data?')){ localStorage.removeItem(STATE_KEY); location.reload(); } });
+
+    // Init
+    (function init(){ if(!state.posts) state.posts=[]; if(!state.logs) state.logs=[]; renderPosts(); renderLogs(); })();
+
+    // Basic scheduler to simulate scheduled posts
+    setInterval(()=>{
+      const now = new Date(); state.posts.filter(p=>p.scheduledAt && !p.publishedAt && new Date(p.scheduledAt) <= now).forEach(p=>simulatePost(p.id));
+    }, 30000);
+
+    // Install button fallback hide
+    document.getElementById('installBtn').style.display='none';
+  </script>
 </body>
 </html>
