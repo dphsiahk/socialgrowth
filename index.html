@@ -1,1 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Social Growth Studio — PWA + API Examples</title>
 
+  <!-- Tailwind via CDN for quick styling (replace with build step in production) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f1724">
+  <style>
+    /* minor custom tweaks */
+    body{background:linear-gradient(180deg,#041025 0%, #091627 100%);color:#e6eef6}
+    .glass{background:rgba(255,255,255,0.03);backdrop-filter:blur(4px)}
+  </style>
+</head>
+<body class="min-h-screen p-6 font-sans">
+  <div class="max-w-6xl mx-auto">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-semibold">Social Growth Studio</h1>
+        <p class="text-sm text-slate-400">Compose, schedule & publish to Facebook + YouTube — PWA-ready with API examples</p>
+      </div>
+      <div class="flex gap-3 items-center">
+        <button id="installBtn" class="px-3 py-1 bg-sky-600 rounded">Install</button>
+        <button id="exportBtn" class="px-3 py-1 border rounded border-slate-700">Export JSON</button>
+      </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Composer / Editor -->
+      <section class="lg:col-span-2 p-6 rounded-2xl glass">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-medium">Create / Schedule Post</h2>
+          <div class="text-sm text-slate-400">Local-only by default — enable APIs to publish</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300">Platform</label>
+            <select id="platform" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700">
+              <option value="facebook">Facebook Page / Group</option>
+              <option value="youtube">YouTube (Community / Video)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300">Post Type</label>
+            <select id="postType" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700">
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm text-slate-300">Title / Headline (YouTube)</label>
+          <input id="title" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="Catchy title" />
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm text-slate-300">Caption / Body</label>
+          <textarea id="body" rows="5" class="w-full mt-1 p-3 rounded bg-transparent border border-slate-700" placeholder="Write your caption... (include hook in first 2 lines)"></textarea>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm text-slate-300">Media URL</label>
+            <input id="mediaUrl" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="https://..." />
+          </div>
+          <div>
+            <label class="block text-sm text-slate-300">Schedule (leave empty to post now)</label>
+            <input id="scheduleAt" type="datetime-local" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" />
+          </div>
+        </div>
+
+        <div class="mt-4 flex gap-3">
+          <button id="generateBtn" class="px-4 py-2 bg-emerald-600 rounded">Generate Caption + Hashtags</button>
+          <button id="saveBtn" class="px-4 py-2 bg-sky-600 rounded">Save / Schedule</button>
+          <button id="postNowBtn" class="px-4 py-2 bg-indigo-600 rounded">Post Now (simulate)</button>
+          <button id="publishApiBtn" class="px-4 py-2 border border-slate-700 rounded">Publish via API</button>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-900 p-4 rounded">
+            <h4 class="text-sm text-slate-300">Quick Tools</h4>
+            <div class="mt-2 flex gap-2">
+              <button id="suggestTitleBtn" class="px-3 py-1 border rounded">Suggest Title</button>
+              <button id="ctaBtn" class="px-3 py-1 border rounded">Add CTA</button>
+              <button id="ideasBtn" class="px-3 py-1 border rounded">Generate Ideas</button>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 p-4 rounded">
+            <h4 class="text-sm text-slate-300">Logs</h4>
+            <pre id="log" class="mt-2 text-xs h-36 overflow-auto bg-transparent"></pre>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <h4 class="text-sm mb-2">Scheduled & Saved Posts</h4>
+          <div id="postList" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <!-- Sidebar: Analytics + API Keys + Export -->
+      <aside class="p-6 rounded-2xl glass">
+        <h3 class="text-lg">Analytics & API</h3>
+
+        <div class="mt-3">
+          <label class="block text-sm text-slate-300">Facebook Page ID</label>
+          <input id="fbPageId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="Your Page ID" />
+        </div>
+        <div class="mt-3">
+          <label class="block text-sm text-slate-300">YouTube Channel ID</label>
+          <input id="ytChannelId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="Your Channel ID" />
+        </div>
+
+        <div class="mt-4">
+          <label class="block text-sm text-slate-300">Followers / Subs</label>
+          <input id="followers" type="number" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700" placeholder="e.g. 1200" />
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button id="calcBtn" class="px-3 py-2 bg-amber-600 rounded">Estimate</button>
+          <button id="clearBtn" class="px-3 py-2 bg-red-600 rounded">Clear All</button>
+        </div>
+
+        <hr class="my-4 border-slate-700" />
+
+        <h4 class="text-sm">API Credentials (Placeholders)</h4>
+        <p class="text-xs text-slate-400">Do not store real secrets in client-side code. Use a secure server to hold client secrets and perform token exchanges.</p>
+        <div class="mt-2">
+          <label class="block text-xs text-slate-300">Facebook Client ID</label>
+          <input id="fbClientId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700 text-sm" placeholder="FACEBOOK_APP_ID" />
+          <label class="block text-xs text-slate-300 mt-2">YouTube Client ID</label>
+          <input id="ytClientId" class="w-full mt-1 p-2 rounded bg-transparent border border-slate-700 text-sm" placeholder="GOOGLE_CLIENT_ID" />
+        </div>
+
+        <div class="mt-4">
+          <button id="exportData" class="px-3 py-2 border rounded">Export Data</button>
+          <input type="file" id="importFile" class="mt-2" />
+        </div>
+
+        <p class="text-xs text-slate-400 mt-4">This demo includes example client-side calls and placeholders. To publish for real you must register apps and run server-side token exchange (authorization code flow).</p>
+      </aside>
+
+    </main>
+  </div>
+
+  <!-- Service Worker registration (PWA) -->
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/sw.js').then(()=>console.log('SW registered')).catch(()=>console.log('SW failed'));
+    }
+
+    // Install prompt handling
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e)=>{
+      e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').style.display='inline-block';
+      document.getElementById('installBtn').onclick = async ()=>{ deferredPrompt.prompt(); const choice = await deferredPrompt.userChoice; deferredPrompt = null; };
+    });
+  </script>
+
+  <!-- Full application script: local storage + API example hooks (client only placeholders) -->
+  <script>
+    /*
+      IMPORTANT SECURITY NOTES (READ):
+      - Never store client secrets in client-side code. Use a backend to perform OAuth client secret exchanges.
+      - This file contains example flows for educational purposes. To publish to Facebook/YouTube you must:
+        1) Register an app in Facebook for Developers and a project in Google Cloud Console.
+        2) Use the Authorization Code flow: redirect user to provider, receive code on server, exchange code + client_secret for access_token on server.
+        3) Store long-lived tokens securely on server and call platform APIs from server or via server-side proxy.
+    */
+
+    const STATE_KEY='sgs_posts_pwa_v2';
+    const state = JSON.parse(localStorage.getItem(STATE_KEY) || JSON.stringify({posts:[],logs:[]}));
+
+    function saveState(){ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+    function nowISO(){ return new Date().toISOString(); }
+    function uid(prefix='id'){ return prefix+'_'+Math.random().toString(36).slice(2,10); }
+
+    // Elements
+    const platform = document.getElementById('platform');
+    const postType = document.getElementById('postType');
+    const title = document.getElementById('title');
+    const body = document.getElementById('body');
+    const mediaUrl = document.getElementById('mediaUrl');
+    const scheduleAt = document.getElementById('scheduleAt');
+    const postList = document.getElementById('postList');
+    const logEl = document.getElementById('log');
+
+    function appendLog(msg){ state.logs.unshift({t:nowISO(),msg}); saveState(); renderLogs(); }
+    function renderLogs(){ logEl.textContent = state.logs.slice(0,300).map(l=>`[${l.t}] ${l.msg}`).join('\n'); }
+
+    function generateHashtags(text){
+      if(!text) return [];
+      const stop = new Set(['the','and','for','with','that','this','from','your','you','are','a','to','in','on','of','video','post','watch']);
+      const words = text.toLowerCase().replace(/[^a-z0-9]+/g,' ').split(/\s+/).filter(w=>w && !stop.has(w) && w.length>2);
+      const freq = {}; words.forEach(w=>freq[w]=(freq[w]||0)+1);
+      return Object.keys(freq).sort((a,b)=>freq[b]-freq[a]).slice(0,8).map(w=>'#'+w);
+    }
+
+    function renderPosts(){ postList.innerHTML=''; state.posts.slice().reverse().forEach(p=>{
+      const el = document.createElement('div'); el.className='p-3 bg-slate-900 rounded';
+      el.innerHTML = `<div class="flex justify-between"><div><strong>${p.platform.toUpperCase()}</strong> <span class="text-xs text-slate-400">${p.postType}</span></div><div class="text-xs text-slate-400">${p.scheduledAt||p.createdAt}</div></div><div class="mt-2 text-sm whitespace-pre-wrap">${p.title?('<strong>'+p.title+'</strong>\n') : ''}${p.body||''}</div>`;
+      const actions = document.createElement('div'); actions.className='mt-3 flex gap-2';
+      const postNow = document.createElement('button'); postNow.textContent='Post Now'; postNow.className='px-2 py-1 bg-emerald-600 rounded text-sm'; postNow.onclick=()=>simulatePost(p.id);
+      const publishApi = document.createElement('button'); publishApi.textContent='Publish via API'; publishApi.className='px-2 py-1 border rounded text-sm'; publishApi.onclick=()=>publishViaApi(p.id);
+      const del = document.createElement('button'); del.textContent='Delete'; del.className='px-2 py-1 bg-red-600 rounded text-sm'; del.onclick=()=>{ if(confirm('Delete post?')){ state.posts=state.posts.filter(x=>x.id!==p.id); saveState(); renderPosts(); } };
+      actions.appendChild(postNow); actions.appendChild(publishApi); actions.appendChild(del); el.appendChild(actions); postList.appendChild(el);
+    }); }
+
+    // Create / Save / Simulate
+    document.getElementById('generateBtn').addEventListener('click', ()=>{
+      const tags = generateHashtags(title.value + ' ' + body.value);
+      body.value += '\n\n' + tags.join(' ');
+      appendLog('Generated hashtags: ' + tags.join(' '));
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', ()=>{
+      const p = { id:uid('post'), platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value, scheduledAt:scheduleAt.value? new Date(scheduleAt.value).toISOString():null, createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value) };
+      state.posts.push(p); saveState(); renderPosts(); appendLog('Saved post '+p.id);
+    });
+
+    document.getElementById('postNowBtn').addEventListener('click', ()=>{
+      const p = { id:uid('post'), platform:platform.value, postType:postType.value, title:title.value, body:body.value, mediaUrl:mediaUrl.value, createdAt: nowISO(), hashtags: generateHashtags(title.value + ' ' + body.value) };
+      state.posts.push(p); saveState(); simulatePost(p.id);
+    });
+
+    // Simulate publishing (only local)
+    function simulatePost(postId){ const p = state.posts.find(x=>x.id===postId); if(!p) return; p.publishedAt = nowISO(); p.metrics = { reach: Math.floor(Math.random()*200)+20, engagement: Math.floor(Math.random()*50) }; saveState(); appendLog(`Simulated publish ${p.platform} id=${p.id} reach=${p.metrics.reach}`); alert('Simulated publish — check logs'); renderPosts(); }
+
+    // ---------- API Example Hooks (placeholders and comments) ----------
+    // NOTE: The following examples are intentionally client-side placeholders that show the shape of requests.
+    // For real publishing you MUST implement server-side OAuth flows and keep client_secret on the server.
+
+    // Example: publish a message to a Facebook Page using a PAGE_ACCESS_TOKEN (server should provide this token)
+    async function publishFacebookPage(pageAccessToken, pageId, message, mediaUrl){
+      // POST /{page-id}/feed?message={message}&access_token={page_access_token}
+      const url = `https://graph.facebook.com/${encodeURIComponent(pageId)}/feed`;
+      const body = new URLSearchParams({ message });
+      // If attaching media, the flow is different: upload photo/video first, then create post with attached_media
+      const res = await fetch(url+'?access_token='+encodeURIComponent(pageAccessToken), { method:'POST', body });
+      return res.json();
+    }
+
+    // Example: upload a video to YouTube (requires OAuth access token with proper scopes)
+    // Real uploads should be done server-side or use resumable upload endpoints with server assistance.
+    async function uploadYouTubeVideo(accessToken, title, description, privacy='public'){
+      // Using simple (single-request) upload for small files - normally you use resumable upload
+      const url = 'https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status';
+      const payload = { snippet:{ title, description }, status:{ privacyStatus: privacy } };
+      const res = await fetch(url, { method:'POST', headers: { 'Authorization': 'Bearer '+accessToken }, body: JSON.stringify(payload) });
+      return res.json();
+    }
+
+    // The publishViaApi function illustrates how the UI would request a server to publish.
+    async function publishViaApi(postId){
+      const p = state.posts.find(x=>x.id===postId); if(!p) return alert('Post not found');
+
+      // Example: client asks your server to perform the publishing (server has tokens)
+      // POST /api/publish
+      // body: { platform: 'facebook'|'youtube', post: p }
+      // Server will: (a) lookup stored tokens for authenticated user, (b) call Facebook Graph or YouTube Data API, (c) return status
+
+      try{
+        appendLog('Requesting server to publish post id='+p.id);
+        // Example fetch (this endpoint must be implemented on your server)
+        const resp = await fetch('/api/publish', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ post: p }) });
+        const data = await resp.json();
+        if(resp.ok){ appendLog('Server publish success: '+JSON.stringify(data)); alert('Published via server (check logs)'); }
+        else { appendLog('Server publish failed: '+JSON.stringify(data)); alert('Publish failed — see logs'); }
+      }catch(err){ appendLog('Publish error: '+err.message); alert('Publish request error'); }
+    }
+
+    /*
+      OAuth flows (high-level recommended architecture):
+      1) Client initiates login by opening server route: GET /auth/facebook or /auth/google
+      2) Server redirects user to provider authorization URL (includes client_id, redirect_uri, scopes)
+      3) User authenticates and provider redirects back to server redirect_uri with a code
+      4) Server exchanges code + client_secret for access_token (and refresh_token) using provider token endpoint
+      5) Server stores token(s) securely and associates them with the user session
+      6) When user requests publish, client calls server API (/api/publish) and server uses stored tokens to call platform APIs
+
+      See provider docs for details and required scopes (Facebook: publish_pages, pages_manage_posts, manage_pages; Google: youtube.upload, youtube.force-ssl, etc.)
+    */
+
+    // Example client-side helper to open OAuth login (server must implement /auth/facebook and /auth/google)
+    function startOAuth(provider){
+      // This will open your backend route which starts the provider redirect
+      window.open('/auth/' + provider, '_self');
+    }
+
+    document.getElementById('publishApiBtn').addEventListener('click', ()=>{
+      const id = state.posts.length ? state.posts[state.posts.length-1].id : null; if(!id) return alert('No posts available'); publishViaApi(id);
+    });
+
+    // small helpers: title suggestions, cta, ideas
+    function suggestYouTubeTitle(text){ if(!text) return 'Quick tip — improve your setup'; const first = text.split(/[\.\!\?\n]/)[0]; return 'How to — ' + first.split(' ').slice(0,8).join(' '); }
+    document.getElementById('suggestTitleBtn').addEventListener('click', ()=>{ title.value = suggestYouTubeTitle(body.value||title.value); appendLog('Suggested title'); });
+    document.getElementById('ctaBtn').addEventListener('click', ()=>{ const ctas=['Like & Share','Comment below','Subscribe for more','Save for later']; body.value += '\n\n' + ctas[Math.floor(Math.random()*ctas.length)]; appendLog('Inserted CTA'); });
+    document.getElementById('ideasBtn').addEventListener('click', ()=>{ alert(['Top 5 tips','Quick tutorial 60s','Before & After','Q&A session','7-day challenge'].join('\n')); appendLog('Generated ideas'); });
+
+    // Export / import
+    document.getElementById('exportData').addEventListener('click', ()=>{ const data = JSON.stringify(state); const blob = new Blob([data],{type:'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url;a.download='sgs_backup_'+new Date().toISOString()+'.json'; a.click(); URL.revokeObjectURL(url); });
+    document.getElementById('importFile').addEventListener('change', (ev)=>{ const f=ev.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=e=>{ try{ const obj=JSON.parse(e.target.result); localStorage.setItem(STATE_KEY, JSON.stringify(obj)); location.reload(); }catch(err){ alert('Invalid file'); } }; r.readAsText(f); });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{ if(confirm('Clear all data?')){ localStorage.removeItem(STATE_KEY); location.reload(); } });
+
+    // Init
+    (function init(){ if(!state.posts) state.posts=[]; if(!state.logs) state.logs=[]; renderPosts(); renderLogs(); })();
+
+    // Basic scheduler to simulate scheduled posts
+    setInterval(()=>{
+      const now = new Date(); state.posts.filter(p=>p.scheduledAt && !p.publishedAt && new Date(p.scheduledAt) <= now).forEach(p=>simulatePost(p.id));
+    }, 30000);
+
+    // Install button fallback hide
+    document.getElementById('installBtn').style.display='none';
+  </script>
+</body>
+</html>
